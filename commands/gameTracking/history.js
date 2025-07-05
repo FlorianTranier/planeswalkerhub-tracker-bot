@@ -23,7 +23,13 @@ export const data = new SlashCommandBuilder()
 	.addUserOption((option) =>
 		option
 			.setName('player')
-			.setDescription('Filter games by specific player')
+			.setDescription('Filter games by specific Discord user')
+			.setRequired(false),
+	)
+	.addStringOption((option) =>
+		option
+			.setName('guest')
+			.setDescription('Filter games by specific guest player name')
 			.setRequired(false),
 	);
 
@@ -35,6 +41,7 @@ export const execute = async (interaction) => {
 
 	const page = interaction.options.getInteger('page') || 1;
 	const playerFilter = interaction.options.getUser('player');
+	const guestFilter = interaction.options.getString('guest');
 
 	// Calculate offset for pagination
 	const offset = (page - 1) * GAMES_PER_PAGE;
@@ -61,6 +68,20 @@ export const execute = async (interaction) => {
 			.range(offset, offset + GAMES_PER_PAGE - 1);
 	}
 
+	// If guest filter is specified, we need to join with results
+	if (guestFilter) {
+		gamesQuery = supabase
+			.from('tracker_game')
+			.select(`
+				*,
+				tracker_game_results!inner(*)
+			`)
+			.eq('guild_id', interaction.guild.id)
+			.eq('tracker_game_results.player_name', guestFilter)
+			.order('created_at', { ascending: false })
+			.range(offset, offset + GAMES_PER_PAGE - 1);
+	}
+
 	const { data: games, error: gamesError } = await gamesQuery;
 
 	if (gamesError) {
@@ -75,7 +96,9 @@ export const execute = async (interaction) => {
 	if (!games || games.length === 0) {
 		const noGamesMessage = playerFilter
 			? `📚 **No Games Found**\n\nNo games found for **${playerFilter.displayName}** on page ${page}.`
-			: '📚 **No Games Found**\n\nNo games have been tracked in this server yet. Start playing and use `/register` to track your games!';
+			: guestFilter
+				? `📚 **No Games Found**\n\nNo games found for guest player **${guestFilter}** on page ${page}.`
+				: '📚 **No Games Found**\n\nNo games have been tracked in this server yet. Start playing and use `/register` to track your games!';
 
 		await interaction.reply({
 			components: [new TextDisplayBuilder().setContent(noGamesMessage)],
@@ -129,6 +152,17 @@ export const execute = async (interaction) => {
 			.eq('tracker_game_results.player_id', playerFilter.id);
 	}
 
+	if (guestFilter) {
+		totalGamesQuery = supabase
+			.from('tracker_game')
+			.select(`
+				id,
+				tracker_game_results!inner(*)
+			`, { count: 'exact' })
+			.eq('guild_id', interaction.guild.id)
+			.eq('tracker_game_results.player_name', guestFilter);
+	}
+
 	const { count: totalGames } = await totalGamesQuery;
 	const totalPages = Math.ceil(totalGames / GAMES_PER_PAGE);
 
@@ -138,7 +172,9 @@ export const execute = async (interaction) => {
 	// Header
 	const headerText = playerFilter
 		? `📚 **Game History - ${playerFilter.displayName}**\nPage ${page} of ${totalPages} • ${totalGames} total games`
-		: `📚 **Game History**\nPage ${page} of ${totalPages} • ${totalGames} total games`;
+		: guestFilter
+			? `📚 **Game History - Guest Player **${guestFilter}****\nPage ${page} of ${totalPages} • ${totalGames} total games`
+			: `📚 **Game History**\nPage ${page} of ${totalPages} • ${totalGames} total games`;
 
 	components.push(new TextDisplayBuilder().setContent(headerText));
 
@@ -192,7 +228,7 @@ export const execute = async (interaction) => {
 	if (page > 1) {
 		buttons.push(
 			new ButtonBuilder()
-				.setCustomId(`history-${page - 1}-${playerFilter?.id || 'all'}`)
+				.setCustomId(`history-${page - 1}-${playerFilter ? `user_${playerFilter.id}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 				.setLabel('◀️ Previous')
 				.setStyle(ButtonStyle.Secondary),
 		);
@@ -201,7 +237,7 @@ export const execute = async (interaction) => {
 	if (page < totalPages) {
 		buttons.push(
 			new ButtonBuilder()
-				.setCustomId(`history-${page + 1}-${playerFilter?.id || 'all'}`)
+				.setCustomId(`history-${page + 1}-${playerFilter ? `user_${playerFilter.id}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 				.setLabel('Next ▶️')
 				.setStyle(ButtonStyle.Secondary),
 		);
@@ -210,7 +246,7 @@ export const execute = async (interaction) => {
 	// Add refresh button
 	buttons.push(
 		new ButtonBuilder()
-			.setCustomId(`history-${page}-${playerFilter?.id || 'all'}`)
+			.setCustomId(`history-${page}-${playerFilter ? `user_${playerFilter.id}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 			.setLabel('🔄 Refresh')
 			.setStyle(ButtonStyle.Primary),
 	);
@@ -236,9 +272,23 @@ export const buttonInteraction = async (interaction) => {
 		return;
 	}
 
-	const [, page, playerId] = interaction.customId.split('-');
+	const [, page, filterInfo] = interaction.customId.split('-');
 	const pageNum = parseInt(page);
-	const playerFilter = playerId === 'all' ? null : playerId;
+
+	let playerFilter = null;
+	let guestFilter = null;
+
+	if (filterInfo === 'all') {
+		// No filter
+	}
+	else if (filterInfo.startsWith('user_')) {
+		// Remove 'user_' prefix
+		playerFilter = filterInfo.substring(5);
+	}
+	else if (filterInfo.startsWith('guest_')) {
+		// Remove 'guest_' prefix
+		guestFilter = filterInfo.substring(6);
+	}
 
 	const supabase = createClient(
 		process.env.SUPABASE_URL,
@@ -270,6 +320,20 @@ export const buttonInteraction = async (interaction) => {
 			.range(offset, offset + GAMES_PER_PAGE - 1);
 	}
 
+	// If guest filter is specified, we need to join with results
+	if (guestFilter) {
+		gamesQuery = supabase
+			.from('tracker_game')
+			.select(`
+				*,
+				tracker_game_results!inner(*)
+			`)
+			.eq('guild_id', interaction.guild.id)
+			.eq('tracker_game_results.player_name', guestFilter)
+			.order('created_at', { ascending: false })
+			.range(offset, offset + GAMES_PER_PAGE - 1);
+	}
+
 	const { data: games, error: gamesError } = await gamesQuery;
 
 	if (gamesError) {
@@ -284,7 +348,9 @@ export const buttonInteraction = async (interaction) => {
 	if (!games || games.length === 0) {
 		const noGamesMessage = playerFilter
 			? `📚 **No Games Found**\n\nNo games found for this player on page ${pageNum}.`
-			: '📚 **No Games Found**\n\nNo games have been tracked in this server yet. Start playing and use `/register` to track your games!';
+			: guestFilter
+				? `📚 **No Games Found**\n\nNo games found for guest player **${guestFilter}** on page ${pageNum}.`
+				: '📚 **No Games Found**\n\nNo games have been tracked in this server yet. Start playing and use `/register` to track your games!';
 
 		await interaction.editReply({
 			components: [new TextDisplayBuilder().setContent(noGamesMessage)],
@@ -337,6 +403,17 @@ export const buttonInteraction = async (interaction) => {
 			.eq('tracker_game_results.player_id', playerFilter);
 	}
 
+	if (guestFilter) {
+		totalGamesQuery = supabase
+			.from('tracker_game')
+			.select(`
+				id,
+				tracker_game_results!inner(*)
+			`, { count: 'exact' })
+			.eq('guild_id', interaction.guild.id)
+			.eq('tracker_game_results.player_name', guestFilter);
+	}
+
 	const { count: totalGames } = await totalGamesQuery;
 	const totalPages = Math.ceil(totalGames / GAMES_PER_PAGE);
 
@@ -346,7 +423,9 @@ export const buttonInteraction = async (interaction) => {
 	// Header
 	const headerText = playerFilter
 		? `📚 **Game History**\nPage ${pageNum} of ${totalPages} • ${totalGames} total games`
-		: `📚 **Game History**\nPage ${pageNum} of ${totalPages} • ${totalGames} total games`;
+		: guestFilter
+			? `📚 **Game History - Guest Player **${guestFilter}****\nPage ${pageNum} of ${totalPages} • ${totalGames} total games`
+			: `📚 **Game History**\nPage ${pageNum} of ${totalPages} • ${totalGames} total games`;
 
 	components.push(new TextDisplayBuilder().setContent(headerText));
 
@@ -407,7 +486,7 @@ export const buttonInteraction = async (interaction) => {
 	if (pageNum > 1) {
 		buttons.push(
 			new ButtonBuilder()
-				.setCustomId(`history-${pageNum - 1}-${playerFilter || 'all'}`)
+				.setCustomId(`history-${pageNum - 1}-${playerFilter ? `user_${playerFilter}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 				.setLabel('◀️ Previous')
 				.setStyle(ButtonStyle.Secondary),
 		);
@@ -416,7 +495,7 @@ export const buttonInteraction = async (interaction) => {
 	if (pageNum < totalPages) {
 		buttons.push(
 			new ButtonBuilder()
-				.setCustomId(`history-${pageNum + 1}-${playerFilter || 'all'}`)
+				.setCustomId(`history-${pageNum + 1}-${playerFilter ? `user_${playerFilter}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 				.setLabel('Next ▶️')
 				.setStyle(ButtonStyle.Secondary),
 		);
@@ -425,7 +504,7 @@ export const buttonInteraction = async (interaction) => {
 	// Add refresh button
 	buttons.push(
 		new ButtonBuilder()
-			.setCustomId(`history-${pageNum}-${playerFilter || 'all'}`)
+			.setCustomId(`history-${pageNum}-${playerFilter ? `user_${playerFilter}` : guestFilter ? `guest_${guestFilter}` : 'all'}`)
 			.setLabel('🔄 Refresh')
 			.setStyle(ButtonStyle.Primary),
 	);

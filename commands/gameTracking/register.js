@@ -25,18 +25,12 @@ const searchIndex = meilisearch.index('magic-cards-full-v2');
 export const data = new SlashCommandBuilder()
 	.setName('register')
 	.setDescription('Register a magic game')
-	.addUserOption((option) =>
-		option.setName('player1').setDescription('Player 1').setRequired(true),
-	)
 	.addStringOption((option) =>
 		option
 			.setName('commander1')
 			.setDescription('Commander 1')
 			.setRequired(true)
 			.setAutocomplete(true),
-	)
-	.addUserOption((option) =>
-		option.setName('player2').setDescription('Player 2').setRequired(true),
 	)
 	.addStringOption((option) =>
 		option
@@ -45,18 +39,12 @@ export const data = new SlashCommandBuilder()
 			.setRequired(true)
 			.setAutocomplete(true),
 	)
-	.addUserOption((option) =>
-		option.setName('player3').setDescription('Player 3').setRequired(false),
-	)
 	.addStringOption((option) =>
 		option
 			.setName('commander3')
 			.setDescription('Commander 3')
 			.setRequired(false)
 			.setAutocomplete(true),
-	)
-	.addUserOption((option) =>
-		option.setName('player4').setDescription('Player 4').setRequired(false),
 	)
 	.addStringOption((option) =>
 		option
@@ -65,15 +53,42 @@ export const data = new SlashCommandBuilder()
 			.setRequired(false)
 			.setAutocomplete(true),
 	)
-	.addUserOption((option) =>
-		option.setName('player5').setDescription('Player 5').setRequired(false),
-	)
 	.addStringOption((option) =>
 		option
 			.setName('commander5')
 			.setDescription('Commander 5')
 			.setRequired(false)
 			.setAutocomplete(true),
+	)
+	.addUserOption((option) =>
+		option.setName('player1').setDescription('Player 1 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest1').setDescription('Player 1 (Guest name)').setRequired(false),
+	)
+	.addUserOption((option) =>
+		option.setName('player2').setDescription('Player 2 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest2').setDescription('Player 2 (Guest name)').setRequired(false),
+	)
+	.addUserOption((option) =>
+		option.setName('player3').setDescription('Player 3 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest3').setDescription('Player 3 (Guest name)').setRequired(false),
+	)
+	.addUserOption((option) =>
+		option.setName('player4').setDescription('Player 4 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest4').setDescription('Player 4 (Guest name)').setRequired(false),
+	)
+	.addUserOption((option) =>
+		option.setName('player5').setDescription('Player 5 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest5').setDescription('Player 5 (Guest name)').setRequired(false),
 	);
 
 export const autocomplete = async (interaction) => {
@@ -93,23 +108,50 @@ export const autocomplete = async (interaction) => {
  * @param {ChatInputCommandInteraction} interaction
  */
 export const execute = async (interaction) => {
-	const player1 = interaction.options.getUser('player1');
-	const player2 = interaction.options.getUser('player2');
-	const player3 = interaction.options.getUser('player3');
-	const player4 = interaction.options.getUser('player4');
-	const player5 = interaction.options.getUser('player5');
+	// Validate that at least one player option is provided for each position
+	const playerOptions = [];
+	for (let i = 1; i <= 5; i++) {
+		const discordUser = interaction.options.getUser(`player${i}`);
+		const guestName = interaction.options.getString(`guest${i}`);
+		const commander = interaction.options.getString(`commander${i}`);
 
-	const players = [player1, player2, player3, player4, player5].filter(
-		(player) => player !== null,
-	);
+		// Skip if no commander (optional players)
+		if (!commander) continue;
 
-	const commanders = [
-		interaction.options.getString('commander1') ? JSON.parse(interaction.options.getString('commander1')).id : null,
-		interaction.options.getString('commander2') ? JSON.parse(interaction.options.getString('commander2')).id : null,
-		interaction.options.getString('commander3') ? JSON.parse(interaction.options.getString('commander3')).id : null,
-		interaction.options.getString('commander4') ? JSON.parse(interaction.options.getString('commander4')).id : null,
-		interaction.options.getString('commander5') ? JSON.parse(interaction.options.getString('commander5')).id : null,
-	].filter((commander) => commander !== null);
+		// Check if either Discord user or guest name is provided
+		if (!discordUser && !guestName) {
+			await interaction.reply({
+				content: `❌ You must provide either a Discord user or guest name for Player ${i}.`,
+				flags: [MessageFlags.Ephemeral],
+			});
+			return;
+		}
+
+		// Check that not both are provided
+		if (discordUser && guestName) {
+			await interaction.reply({
+				content: `❌ You cannot provide both a Discord user and guest name for Player ${i}. Choose one or the other.`,
+				flags: [MessageFlags.Ephemeral],
+			});
+			return;
+		}
+
+		playerOptions.push({
+			position: i,
+			discordUser,
+			guestName,
+			commander,
+		});
+	}
+
+	// Validate that we have at least 2 players
+	if (playerOptions.length < 2) {
+		await interaction.reply({
+			content: '❌ You must provide at least 2 players to register a game.',
+			flags: [MessageFlags.Ephemeral],
+		});
+		return;
+	}
 
 	const { data: game } = await supabase
 		.from('tracker_game')
@@ -123,30 +165,32 @@ export const execute = async (interaction) => {
 
 	const components = [];
 
-	for (let i = 0; i < players.length; i++) {
+	for (let i = 0; i < playerOptions.length; i++) {
+		const playerOption = playerOptions[i];
+		const playerId = playerOption.discordUser ? playerOption.discordUser.id : `guest_${Date.now()}_${i}`;
+		const playerName = playerOption.discordUser ? playerOption.discordUser.displayName : playerOption.guestName;
+		const commanderData = JSON.parse(playerOption.commander);
+
 		await supabase
 			.from('tracker_game_results')
 			.insert({
 				game_id: game.id,
-				player_id: players[i].id,
-				player_name: players[i].displayName,
-				commander_id: commanders[i],
-				commander_name: commanders[i] ? JSON.parse(interaction.options.getString(`commander${i + 1}`)).name : null,
+				player_id: playerId,
+				player_name: playerName,
+				commander_id: commanderData.id,
+				commander_name: commanderData.name,
 			});
 
-		const player = players[i];
-		const commander = interaction.options.getString(`commander${i + 1}`) ? JSON.parse(interaction.options.getString(`commander${i + 1}`)).name : null;
-
 		components.push(new TextDisplayBuilder().setContent(
-			`${player.displayName} / ${commander} (position 1 to ${players.length})`,
+			`${playerName} / ${commanderData.name} (position 1 to ${playerOptions.length})`,
 		));
 
 		components.push(new ActionRowBuilder().addComponents(
 			new StringSelectMenuBuilder()
-				.setCustomId(`register-${game.id}-${player.id}-position`)
+				.setCustomId(`register-${game.id}-${playerId}-position`)
 				.setPlaceholder('Select player\'s position')
 				.setOptions(
-					Array.from({ length: players.length }, (_, index) => ({
+					Array.from({ length: playerOptions.length }, (_, index) => ({
 						label: `Position ${index + 1}`,
 						value: (index + 1).toString(),
 					})),

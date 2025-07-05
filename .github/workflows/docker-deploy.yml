@@ -38,6 +38,10 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          MEILI_HOST: ${{ secrets.MEILI_HOST }}
+          MEILI_KEY: ${{ secrets.MEILI_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
   docker-build-and-deploy:
     runs-on: ubuntu-latest
