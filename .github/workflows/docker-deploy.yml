@@ -23,6 +23,19 @@ jobs:
       - name: Push Git Tag
         run: git push origin --tags
 
+  deploy-commands:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Deploy commands
+        run: node deploy-commands.js
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+
   docker-build-and-deploy:
     runs-on: ubuntu-latest
     steps:
