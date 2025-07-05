@@ -31,7 +31,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Deploy commands
-        run: node deploy-commands.js
+        run: |
+          npm install -g pnpm
+          pnpm install
+          node deploy-commands.js
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
