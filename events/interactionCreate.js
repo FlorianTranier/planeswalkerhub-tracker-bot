@@ -59,6 +59,29 @@ export const execute = async (interaction) => {
 			console.error(error);
 		}
 	}
+	else if (interaction.isButton()) {
+		// Handle button interactions for commands
+		const customId = interaction.customId;
+		if (customId.startsWith('history-')) {
+			const command = interaction.client.commands.get('history');
+			if (!command) {
+				console.error('History command not found for button interaction.');
+				return;
+			}
+			try {
+				await command.buttonInteraction(interaction);
+			}
+			catch (error) {
+				console.error(error);
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp({
+						content: 'There was an error while processing this button interaction!',
+						ephemeral: true,
+					});
+				}
+			}
+		}
+	}
 };
 
 export default { name, execute };
