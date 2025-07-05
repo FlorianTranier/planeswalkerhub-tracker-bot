@@ -320,10 +320,10 @@ export const buttonInteraction = async (interaction) => {
 		options: {
 			getUser: (name) => {
 				if (name === 'player1') {
-					return { id: player1Id, displayName: 'Player 1' };
+					return { id: player1Id, displayName: interaction.guild.members.cache.get(player1Id)?.displayName || 'Unknown Player' };
 				}
 				if (name === 'player2') {
-					return { id: player2Id, displayName: 'Player 2' };
+					return { id: player2Id, displayName: interaction.guild.members.cache.get(player2Id)?.displayName || 'Unknown Player' };
 				}
 				return null;
 			},
