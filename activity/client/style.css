@@ -1,0 +1,47 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #23272a;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}
+#root {
+  max-width: 600px;
+  margin: 40px auto;
+  background: #2c2f33;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px #0008;
+  padding: 24px;
+}
+input, select, button {
+  font-size: 1rem;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  margin: 4px 0;
+}
+button {
+  background: #5865f2;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #4752c4;
+}
+.player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #36393f;
+  border-radius: 8px;
+  margin: 8px 0;
+  padding: 12px;
+}
+.player .username {
+  font-weight: bold;
+}
+.player .hp {
+  font-size: 1.2rem;
+  margin: 0 12px;
+} 
