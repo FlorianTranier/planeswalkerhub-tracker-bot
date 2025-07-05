@@ -81,6 +81,25 @@ export const execute = async (interaction) => {
 				}
 			}
 		}
+		else if (customId.startsWith('h2h-')) {
+			const command = interaction.client.commands.get('h2h');
+			if (!command) {
+				console.error('H2H command not found for button interaction.');
+				return;
+			}
+			try {
+				await command.buttonInteraction(interaction);
+			}
+			catch (error) {
+				console.error(error);
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp({
+						content: 'There was an error while processing this button interaction!',
+						ephemeral: true,
+					});
+				}
+			}
+		}
 	}
 };
 
