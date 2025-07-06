@@ -1,7 +1,10 @@
 {
   "name": "planeswalkerhub-tracker-bot",
   "version": "1.1.0",
-  "description": "",
+  "author": "Florian Tranier",
+  "email": "contact@planeswalkerhub.com",
+  "license": "CC BY-NC 4.0",
+  "description": "A Discord bot for tracking Magic the gathering commander games",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -9,9 +12,13 @@
     "start": "node index.js",
     "start:dev": "node --env-file=.env index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "discord",
+    "bot",
+    "magic the gathering",
+    "commander",
+    "tracker"
+  ],
   "packageManager": "pnpm@10.6.1",
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
