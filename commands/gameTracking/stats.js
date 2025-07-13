@@ -129,10 +129,6 @@ export const execute = async (interaction) => {
 				};
 			})
 			.sort((a, b) => {
-				// Sort by win rate first, then by games played
-				if (Math.abs(a.winRate - b.winRate) > 0.1) {
-					return b.winRate - a.winRate;
-				}
 				return b.games - a.games;
 			});
 
@@ -146,35 +142,28 @@ export const execute = async (interaction) => {
 		components.push(headerComponent);
 
 		// Player stats components
-		sortedPlayers.forEach((player, index) => {
-			const rank = index + 1;
-			const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank.toString().padStart(2)}.`;
-
-			const winRateColor = player.winRate >= 25 ? '🟢' : player.winRate >= 15 ? '🟡' : '🔴';
+		sortedPlayers.forEach((player) => {
 
 			// Build position stats string
 			let positionStats = '';
 			if (player.avgPosition3p !== null) {
-				const color3p = player.avgPosition3p <= 2.0 ? '🟢' : player.avgPosition3p <= 2.5 ? '🟡' : '🔴';
-				positionStats += `3p: ${color3p} ${player.avgPosition3p} (${player.games3p})\n`;
+				positionStats += `For **3** players in **${player.games3p}** games : **${player.avgPosition3p}**\n`;
 			}
 			if (player.avgPosition4p !== null) {
-				const color4p = player.avgPosition4p <= 2.5 ? '🟢' : player.avgPosition4p <= 3.0 ? '🟡' : '🔴';
-				positionStats += `4p: ${color4p} ${player.avgPosition4p} (${player.games4p})\n`;
+				positionStats += `For **4** players in **${player.games4p}** games : **${player.avgPosition4p}**\n`;
 			}
 			if (player.avgPosition5p !== null) {
-				const color5p = player.avgPosition5p <= 3.0 ? '🟢' : player.avgPosition5p <= 3.5 ? '🟡' : '🔴';
-				positionStats += `5p: ${color5p} ${player.avgPosition5p} (${player.games5p})\n`;
+				positionStats += `For **5** players in **${player.games5p}** games : **${player.avgPosition5p}**\n`;
 			}
 
 			const playerComponent = new TextDisplayBuilder()
-				.setContent(`${rankEmoji} **${player.name}**\n`);
+				.setContent(`__**${player.name}**__\n`);
 
 			components.push(playerComponent);
 
 			const statsComponent = new TextDisplayBuilder()
-				.setContent(`   🎮 Games: ${player.games.toString().padStart(2)} • 🏆 Wins: ${player.wins.toString().padStart(2)} • ${winRateColor} Win Rate: ${player.winRate.toString().padStart(5)}%\n` +
-					`📍 Avg Positions:\n${positionStats}`);
+				.setContent(`   Games/Wins/Win rate • ${player.games.toString()}/${player.wins.toString()}/${player.winRate.toString()}%\n` +
+					`📍 Average Positions:\n${positionStats}`);
 
 			components.push(statsComponent);
 		});
@@ -260,10 +249,6 @@ export const execute = async (interaction) => {
 				};
 			})
 			.sort((a, b) => {
-				// Sort by win rate first, then by games played
-				if (Math.abs(a.winRate - b.winRate) > 0.1) {
-					return b.winRate - a.winRate;
-				}
 				return b.games - a.games;
 			});
 
@@ -277,33 +262,25 @@ export const execute = async (interaction) => {
 		components.push(headerComponent);
 
 		// Commander stats components
-		sortedCommanders.forEach((stat, index) => {
-			const rank = index + 1;
-			const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank.toString().padStart(2)}.`;
-
-			const winRateColor = stat.winRate >= 25 ? '🟢' : stat.winRate >= 15 ? '🟡' : '🔴';
-
+		sortedCommanders.forEach((stat) => {
 			// Build position stats string
 			let positionStats = '';
 			if (stat.avgPosition3p !== null) {
-				const color3p = stat.avgPosition3p <= 2.0 ? '🟢' : stat.avgPosition3p <= 2.5 ? '🟡' : '🔴';
-				positionStats += `3p: ${color3p} ${stat.avgPosition3p} (${stat.games3p})\n`;
+				positionStats += `For **3** players in **${stat.games3p}** games : **${stat.avgPosition3p}**\n`;
 			}
 			if (stat.avgPosition4p !== null) {
-				const color4p = stat.avgPosition4p <= 2.5 ? '🟢' : stat.avgPosition4p <= 3.0 ? '🟡' : '🔴';
-				positionStats += `4p: ${color4p} ${stat.avgPosition4p} (${stat.games4p})\n`;
+				positionStats += `For **4** players in **${stat.games4p}** games : **${stat.avgPosition4p}**\n`;
 			}
 			if (stat.avgPosition5p !== null) {
-				const color5p = stat.avgPosition5p <= 3.0 ? '🟢' : stat.avgPosition5p <= 3.5 ? '🟡' : '🔴';
-				positionStats += `5p: ${color5p} ${stat.avgPosition5p} (${stat.games5p})\n`;
+				positionStats += `For **5** players in **${stat.games5p}** games : **${stat.avgPosition5p}**\n`;
 			}
 
 			const commanderComponent = new TextDisplayBuilder()
-				.setContent(`${rankEmoji} **${stat.name}** + *${stat.commander}*\n`);
+				.setContent(`__**${stat.name}**__ + __*${stat.commander}*__\n`);
 
 			const statsComponent = new TextDisplayBuilder()
-				.setContent(`   🎮 Games: ${stat.games.toString().padStart(2)} • 🏆 Wins: ${stat.wins.toString().padStart(2)} • ${winRateColor} Win Rate: ${stat.winRate.toString().padStart(5)}%\n` +
-					`📍 Avg Positions:\n${positionStats}`);
+				.setContent(`   Games/Wins/Win rate • ${stat.games.toString()}/${stat.wins.toString()}/${stat.winRate.toString()}%\n` +
+					`📍 Average Positions:\n${positionStats}`);
 
 			components.push(commanderComponent);
 			components.push(statsComponent);
