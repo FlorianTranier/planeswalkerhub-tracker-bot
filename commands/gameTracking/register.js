@@ -25,19 +25,37 @@ const searchIndex = meilisearch.index('magic-cards-full-v2');
 export const data = new SlashCommandBuilder()
 	.setName('register')
 	.setDescription('Register a magic game')
+	.addUserOption((option) =>
+		option.setName('player1').setDescription('Player 1 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest1').setDescription('Player 1 (Guest name)').setRequired(false),
+	)
 	.addStringOption((option) =>
 		option
 			.setName('commander1')
 			.setDescription('Commander 1')
-			.setRequired(true)
+			.setRequired(false)
 			.setAutocomplete(true),
+	)
+	.addUserOption((option) =>
+		option.setName('player2').setDescription('Player 2 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest2').setDescription('Player 2 (Guest name)').setRequired(false),
 	)
 	.addStringOption((option) =>
 		option
 			.setName('commander2')
 			.setDescription('Commander 2')
-			.setRequired(true)
+			.setRequired(false)
 			.setAutocomplete(true),
+	)
+	.addUserOption((option) =>
+		option.setName('player3').setDescription('Player 3 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest3').setDescription('Player 3 (Guest name)').setRequired(false),
 	)
 	.addStringOption((option) =>
 		option
@@ -46,6 +64,12 @@ export const data = new SlashCommandBuilder()
 			.setRequired(false)
 			.setAutocomplete(true),
 	)
+	.addUserOption((option) =>
+		option.setName('player4').setDescription('Player 4 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest4').setDescription('Player 4 (Guest name)').setRequired(false),
+	)
 	.addStringOption((option) =>
 		option
 			.setName('commander4')
@@ -53,42 +77,18 @@ export const data = new SlashCommandBuilder()
 			.setRequired(false)
 			.setAutocomplete(true),
 	)
+	.addUserOption((option) =>
+		option.setName('player5').setDescription('Player 5 (Discord user)').setRequired(false),
+	)
+	.addStringOption((option) =>
+		option.setName('guest5').setDescription('Player 5 (Guest name)').setRequired(false),
+	)
 	.addStringOption((option) =>
 		option
 			.setName('commander5')
 			.setDescription('Commander 5')
 			.setRequired(false)
 			.setAutocomplete(true),
-	)
-	.addUserOption((option) =>
-		option.setName('player1').setDescription('Player 1 (Discord user)').setRequired(false),
-	)
-	.addStringOption((option) =>
-		option.setName('guest1').setDescription('Player 1 (Guest name)').setRequired(false),
-	)
-	.addUserOption((option) =>
-		option.setName('player2').setDescription('Player 2 (Discord user)').setRequired(false),
-	)
-	.addStringOption((option) =>
-		option.setName('guest2').setDescription('Player 2 (Guest name)').setRequired(false),
-	)
-	.addUserOption((option) =>
-		option.setName('player3').setDescription('Player 3 (Discord user)').setRequired(false),
-	)
-	.addStringOption((option) =>
-		option.setName('guest3').setDescription('Player 3 (Guest name)').setRequired(false),
-	)
-	.addUserOption((option) =>
-		option.setName('player4').setDescription('Player 4 (Discord user)').setRequired(false),
-	)
-	.addStringOption((option) =>
-		option.setName('guest4').setDescription('Player 4 (Guest name)').setRequired(false),
-	)
-	.addUserOption((option) =>
-		option.setName('player5').setDescription('Player 5 (Discord user)').setRequired(false),
-	)
-	.addStringOption((option) =>
-		option.setName('guest5').setDescription('Player 5 (Guest name)').setRequired(false),
 	);
 
 export const autocomplete = async (interaction) => {
@@ -115,9 +115,6 @@ export const execute = async (interaction) => {
 		const guestName = interaction.options.getString(`guest${i}`);
 		const commander = interaction.options.getString(`commander${i}`);
 
-		// Skip if no commander (optional players)
-		if (!commander) continue;
-
 		// Check if either Discord user or guest name is provided
 		if (!discordUser && !guestName) {
 			await interaction.reply({
@@ -131,6 +128,14 @@ export const execute = async (interaction) => {
 		if (discordUser && guestName) {
 			await interaction.reply({
 				content: `❌ You cannot provide both a Discord user and guest name for Player ${i}. Choose one or the other.`,
+				flags: [MessageFlags.Ephemeral],
+			});
+			return;
+		}
+
+		if (!commander) {
+			await interaction.reply({
+				content: `❌ You must provide a commander for Player ${i}.`,
 				flags: [MessageFlags.Ephemeral],
 			});
 			return;
