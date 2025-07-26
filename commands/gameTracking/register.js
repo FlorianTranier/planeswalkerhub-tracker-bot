@@ -116,7 +116,7 @@ export const execute = async (interaction) => {
 		const commander = interaction.options.getString(`commander${i}`);
 
 		// Check if either Discord user or guest name is provided
-		if (!discordUser && !guestName) {
+		if (commander && !discordUser && !guestName) {
 			await interaction.reply({
 				content: `❌ You must provide either a Discord user or guest name for Player ${i}.`,
 				flags: [MessageFlags.Ephemeral],
@@ -133,7 +133,7 @@ export const execute = async (interaction) => {
 			return;
 		}
 
-		if (!commander) {
+		if (!commander && (discordUser || guestName)) {
 			await interaction.reply({
 				content: `❌ You must provide a commander for Player ${i}.`,
 				flags: [MessageFlags.Ephemeral],
@@ -141,12 +141,14 @@ export const execute = async (interaction) => {
 			return;
 		}
 
-		playerOptions.push({
-			position: i,
-			discordUser,
-			guestName,
-			commander,
-		});
+		if (commander && (discordUser || guestName)) {
+			playerOptions.push({
+				position: i,
+				discordUser,
+				guestName,
+				commander,
+			});
+		}
 	}
 
 	// Validate that we have at least 2 players
