@@ -97,11 +97,14 @@ export const autocomplete = async (interaction) => {
 		limit: 2,
 		attributesToRetrieve: ['name', 'oracle_id'],
 		distinct: 'old_custom_id',
-		filter: ['lang = "en"'],
+		filter: ['lang = "en"', 'layout != "art_series"'],
 	});
 	const choices = search.hits.map((hit) => ({ name: hit.name, id: hit.oracle_id }));
 	await interaction.respond(
-		choices.map((choice) => ({ name: choice.name, value: JSON.stringify({ id: choice.id, name: choice.name }) })),
+		choices.map((choice) => {
+			const value = JSON.stringify({ id: choice.id, name: choice.name.split('//')[0] });
+			return { name: choice.name, value: value.substring(0, 50) };
+		}),
 	);
 };
 
