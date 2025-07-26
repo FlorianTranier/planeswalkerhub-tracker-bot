@@ -96,7 +96,8 @@ export const autocomplete = async (interaction) => {
 	const search = await searchIndex.search(focusedValue, {
 		limit: 2,
 		attributesToRetrieve: ['name', 'oracle_id'],
-		distinct: 'oracle_id',
+		distinct: 'old_custom_id',
+		filter: ['lang = "en"'],
 	});
 	const choices = search.hits.map((hit) => ({ name: hit.name, id: hit.oracle_id }));
 	await interaction.respond(
